@@ -17,7 +17,9 @@
 #include <pthread.h>
 
 // definindo constantes para serem usadas na comunicação
-#define MAX 4096
+#define MAX_BUFFER 4096
+#define NICKNAME_MAX_SIZE 50
+#define PORT 8081
 
 #define TRUE 1
 #define FALSE 0
@@ -32,6 +34,22 @@ typedef struct _socket_data {
     struct sockaddr_in server_address;
     int addr_len;
 } SOCKET_DATA;
+
+typedef enum _irc_options {
+    // Comando da Segunda entrega
+    msg = 0,
+    connect,
+    quit,
+    ping,
+
+    // Comandos da Terceira entrega
+    join,
+    nickname,
+    kick,
+    mute,
+    unmute,
+    whois
+} IRC_OPTIONS;
 
 
 // definindo funções de envio e recebimento de mensaagens do cliente

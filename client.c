@@ -1,7 +1,6 @@
 #include "client.h"
 
 
-
 // (Abaixo)Funções traziadas da utils.c -> revisar para possíveis alterações ---------------
 
 // função de envio de mensagem
@@ -132,7 +131,7 @@ int main(int argc, char *argv[]) {
     // ******* New code ***************
     
     // => Código que não estava na entrega 1
-
+    char client_nickname[NICKNAME_MAX_SIZE] = "user";
     int opcode; // representa a operação (comando) que é enviado pelo cliente ao servidor.
 
     // Cliente tem que estar conectado com o servidor (??)
@@ -148,13 +147,12 @@ int main(int argc, char *argv[]) {
         // Verificamos se uma mensagem se trata de um comando - e qual -  ou não 
         opcode = parse_for_cmd(msg);
 
-        if((opcode != 5) && (!has_nickname(cur_client))) { // has_nickname() ainda não implementada
-            printf("Antes de realizar qualquer operação, escolha um apelido com o comando: '/nickname apelidoDesejado' \n");
+        if((nickname != 5) && strncasecmp(client_nickname, "user", 4) == 0) { 
+            printf("Before any action, choose a nickname with command '/nickname <choosen nickname>'\n");
             continue; 
         }
 
-        switch (opcode){
-
+        switch (opcode) {
             // opcode == 0
             case msg: // Não há comandos, o cliente está apenas enviando uma msg
                 break;
