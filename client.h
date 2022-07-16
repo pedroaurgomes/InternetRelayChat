@@ -1,5 +1,5 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __CLIENT_H__
+#define __CLIENT_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,10 +19,10 @@
 // definindo constantes para serem usadas na comunicação
 #define MAX 4096
 
-#define PORT 8080
-
 #define TRUE 1
 #define FALSE 0
+
+typedef enum { false, true } bool;
 
 // structs para passar mais facilmente parâmetros da socket
 typedef struct sockaddr_in socket_address;
@@ -33,7 +33,8 @@ typedef struct _socket_data {
     int addr_len;
 } SOCKET_DATA;
 
-// definindo funções
+
+// definindo funções de envio e recebimento de mensaagens do cliente
 void *recv_message(void * args);
 void *send_message(void *args);
 

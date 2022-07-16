@@ -1,3 +1,6 @@
+
+// FUNÇÕES PASSADAS PARA CLIENT.C => EXCLUIR ESTE ARQUIVO
+
 #include "utils.h"
 
 // ambas as funções são utilizadas tanto pelo server quanto pelo cliente para participarem do chat
