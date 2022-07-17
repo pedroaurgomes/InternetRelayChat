@@ -1,8 +1,8 @@
 cc     = gcc      
 MAKE   = make
 RM     = rm
-SERVER = ./server.c ./utils.c
-CLIENT = ./client.c ./utils.c
+SERVER = ./server.c 
+CLIENT = ./client.c 
 CFLAGS = -Wall -Werror -pthread
 
 #targets .

@@ -21,6 +21,12 @@
 #define NICKNAME_MAX_SIZE 50
 #define PORT 8081
 
+#define MAX_CLIENTS_ON          10
+#define MAX_CHANNELS            10
+#define NICKNAME_MAX_SIZE       50
+#define CHANNEL_NAME_MAX_SIZE   200
+#define MAX_CLIENTS_PER_CHANNEL 10
+
 #define TRUE 1
 #define FALSE 0
 
@@ -29,16 +35,19 @@ typedef enum { false, true } bool;
 // structs para passar mais facilmente parâmetros da socket
 typedef struct sockaddr_in socket_address;
 
-typedef struct _socket_data {
+typedef struct __client_data {
+    char client_nickname[NICKNAME_MAX_SIZE];
     int socket_descriptor;
     struct sockaddr_in server_address;
     int addr_len;
+    bool is_connected;
 } SOCKET_DATA;
 
 typedef enum _irc_options {
-    // Comando da Segunda entrega
     msg = 0,
-    connect,
+    
+    // Comando da Segunda entrega
+    con, // connect
     quit,
     ping,
 
@@ -48,12 +57,10 @@ typedef enum _irc_options {
     kick,
     mute,
     unmute,
-    whois
+    whois,
+
+    invalid_command
 } IRC_OPTIONS;
 
-
-// definindo funções de envio e recebimento de mensaagens do cliente
-void *recv_message(void * args);
-void *send_message(void *args);
 
 #endif

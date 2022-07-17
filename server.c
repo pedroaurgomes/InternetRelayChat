@@ -6,11 +6,21 @@
 #define CHANNEL_NAME_MAX_SIZE   200
 #define MAX_CLIENTS_PER_CHANNEL 10
 
-#define PORT 8080
+#define PORT 8081
 
 typedef struct _server_side_channel_struct CHANNEL;
 typedef struct _server_side_client_struct CLIENT;
 typedef struct _server_side_struct SERVER_SIDE;
+typedef struct _server_msg_pattern_struct SERVER_FRAME;
+
+// Padrão de mensagens que serão recebidas pelo servidor
+// Corresponde a 2 sends: 
+// - Mensagem enviada pelo cliente
+// - Operação desejada pelo cliente
+// struct _server_msg_pattern_struct {
+//     char message[MAX_BUFFER];
+//     int opcode;
+// };
 
 // Struct que representa os canais dentro do servidor
 struct _server_side_channel_struct {
@@ -76,70 +86,105 @@ void end_client_connection(CLIENT* cliente){
 
 //todo: ping -> ao invés de fazer função de ping, só mandar um send(client->sock, "server >> pong", 14, 0)
 
-// função de envio de mensagem
-void *send_message(void *args) {
-    // Usa a socket e a comunicação criadas nas mains como parâmetro
-    SOCKET_DATA * connection_socket = (SOCKET_DATA *) args;
+// // função de envio de mensagem
+// void *send_message(void *args) {
+//     // Usa a socket e a comunicação criadas nas mains como parâmetro
+//     SOCKET_DATA * connection_socket = (SOCKET_DATA *) args;
     
-    // cria um buffer com o tamanho máximo da mensagem
-    char * buffer = malloc(MAX * sizeof(char));
+//     // cria um buffer com o tamanho máximo da mensagem
+//     char * buffer = malloc(MAX * sizeof(char));
 
-    // loop que recebe da stdin e envia mensagens de tamanho máximo 4096 bytes até o chat ser encerrado
-    while (TRUE) {
+//     // loop que recebe da stdin e envia mensagens de tamanho máximo 4096 bytes até o chat ser encerrado
+//     while (TRUE) {
 
-        memset(buffer, 0, MAX * sizeof(char));
-        fgets(buffer, MAX, stdin);
+//         memset(buffer, 0, MAX * sizeof(char));
+//         fgets(buffer, MAX, stdin);
 
-        if (buffer == NULL) break;
+//         if (buffer == NULL) break;
         
-        buffer[strlen(buffer) - 1] = '\0';
-        send(connection_socket->socket_descriptor, buffer, strlen(buffer) * sizeof(char), 0);
+//         buffer[strlen(buffer) - 1] = '\0';
+//         send(connection_socket->socket_descriptor, buffer, strlen(buffer) * sizeof(char), 0);
+//     }
+
+//     // encerrando variáveis
+//     free(buffer);
+    
+//     close(connection_socket->socket_descriptor);
+
+//     return 0;
+// }
+
+// // função de leitura de mensagens
+// void *recv_message(void * args) {
+//     // Usa a socket e a comunicação criadas nas mains como parâmetro
+//     SOCKET_DATA * connection_socket = (SOCKET_DATA *) args;
+    
+//     // cria um buffer com o tamanho máximo da mensagem
+//     char *buffer = malloc(MAX * sizeof(char));
+
+//     // loop que recebe do chat mensagens de tamanho máximo 4096 bytes e as mostra na tela
+//     while (TRUE) {
+//         memset(buffer, 0, MAX * sizeof(char));
+//         if (recv(connection_socket->socket_descriptor, buffer, MAX * sizeof(char), 0) > 0) {
+//             printf(">> %s\n", buffer);
+//         }
+//         else {
+//             break;
+//         }
+//     }
+// }
+
+
+
+struct _server_side_client_struct *search_client_by_nickname(char* nickname, SERVER_SIDE *server){
+    // Busca sequencial por todos os clientes a partir do nickname dado    
+    for (int i = 0; i < MAX_CLIENTS_ON; ++i) {
+        if (!server->clients[i]) continue;
+        if (strcmp(nickname, server->clients[i]->nickname) == 0)
+            return server->clients[i];
     }
 
-    // encerrando variáveis
-    free(buffer);
-    
-    close(connection_socket->socket_descriptor);
-
-    return 0;
-}
-
-// função de leitura de mensagens
-void *recv_message(void * args) {
-    // Usa a socket e a comunicação criadas nas mains como parâmetro
-    SOCKET_DATA * connection_socket = (SOCKET_DATA *) args;
-    
-    // cria um buffer com o tamanho máximo da mensagem
-    char *buffer = malloc(MAX * sizeof(char));
-
-    // loop que recebe do chat mensagens de tamanho máximo 4096 bytes e as mostra na tela
-    while (TRUE) {
-        memset(buffer, 0, MAX * sizeof(char));
-        if (recv(connection_socket->socket_descriptor, buffer, MAX * sizeof(char), 0) > 0) {
-            printf(">> %s\n", buffer);
-        }
-        else {
-            break;
-        }
-    }
+    return NULL;
 }
 
 // aceitando conexões novas, passa pela lista de clientes no server, checa posições vazias, e cria conexão
-void *connect_server_client(SERVER_SIDE * server) {
+void * connect_server_client(void * args) {
+    SERVER_SIDE * server = (SERVER_SIDE *) args;
+
     // SERVER_SIDE * server = (SERVER_SIDE *) args;
     while (TRUE) {
-        for (int i = 0; i < MAX_CLIENTS_ON; i++){
+        for (int i = 0; i < MAX_CLIENTS_ON; i++) {
             if(!server->clients[i]){
-                CLIENT* cur_client = calloc(1, sizeof(CLIENT));
+                CLIENT * cur_client = calloc(1, sizeof(CLIENT));
                 cur_client->socket_descriptor = accept(server->socket_descriptor, (struct sockaddr *) &cur_client->addr, &cur_client->addr_len);
-                send(cur_client->socket_descriptor, "Conenction made", sizeof("Conenction made"), 0);
+                
                 recv(cur_client->socket_descriptor, cur_client->nickname, NICKNAME_MAX_SIZE, 0);
+
+                char * welcome_message = calloc(8 + strlen(cur_client->nickname), sizeof(char));
+                
                 printf("%s has joined the server\n", cur_client->nickname);
+                strcpy(welcome_message, "Hello, ");
+                strcat(welcome_message, cur_client->nickname);
+                
                 server->clients[i] = cur_client;
+                server->num_clients++;
+
+                send(cur_client->socket_descriptor, welcome_message, strlen(welcome_message) + 1, 0);
             }
         }
     }
 }
+
+// SERVER_FRAME * recv_message(CLIENT * cur_client) {
+//     SERVER_FRAME * client_message = calloc(1, sizeof(SERVER_FRAME));
+    
+//     recv(cur_client->socket_descriptor, & client_message->opcode, sizeof(int), 0);
+//     recv(cur_client->socket_descriptor, client_message->message, MAX_BUFFER, 0);
+    
+//         printf("%s %s %d\n", cur_client->nickname, client_message->message, client_message->opcode);
+
+//     return client_message;
+// }
 
 
 int main(int argc, char *argv[]) {
@@ -194,100 +239,114 @@ int main(int argc, char *argv[]) {
         printf("Socket successfully listening on port %d\n", PORT);
     }
 
-
     pthread_t connection_thread;
     pthread_create(&connection_thread, NULL, connect_server_client, (void *) &server);
 
-    char msg[4096] = {'\0'};
-
-    while (TRUE){
-        for (int i = 0; i < MAX_CLIENTS_ON; i++) {
-            if(!server.clients[i]) continue;
+    bool end_server = false;
+    while(!end_server) {
+        for (int i = 0; i < MAX_CLIENTS_ON; ++i) {
+            if (server.clients[i] == NULL) continue;
+            int opcode = -1;
             
+            CLIENT * cur_client = server.clients[i];
+            recv(cur_client->socket_descriptor, &opcode, sizeof(int), 0);
+            // printf("opcode: %d\n", opcode);
+            
+            switch (opcode) {
+                case msg:
+                {
+                    if(!cur_client->user_channel){
+                        //todo colocar mensagem de erro para entrar em canal soh pra qm mandou
+                    }
+                    if(cur_client->is_muted){
+                        //todo colocar mensagem de erro para avisar que esta mutado soh pra qm mandou
+                    }
+                    char message[MAX_BUFFER];
+                    recv(cur_client->socket_descriptor, message, MAX_BUFFER, 0);
+                    
+                    break;
+                }
+                case quit:
+                {
+                    for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; i++) {
+                        if (cur_client->user_channel->clients[i] == cur_client ) {
+                            cur_client->user_channel->clients[i] = NULL;
+                            cur_client->user_channel->num_clients--;
+                        }
+                    }
+                    if(cur_client->is_admin){
+                        for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; i++) {
+                            if (cur_client->user_channel->clients[i] != NULL) {
+                                cur_client->user_channel->clients[i]->is_admin = TRUE;
+                            }
+                        }
+                    }
+                    close(cur_client->socket_descriptor);
+
+                    //todo: desalocar da estrutura
+                    break;
+                }                
+                
+                case ping:
+                {
+                    send(cur_client->socket_descriptor, "server >> pong", 14, 0);
+                    break;
+                }
+                case join: 
+                {
+                    char channel[CHANNEL_NAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, channel, CHANNEL_NAME_MAX_SIZE, 0);
+
+                    // TODO: responder a função de join do cliente
+                    break;
+                }
+                case nickname: 
+                {
+                    char name[NICKNAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
+
+                    // server não pode ter nickname
+                    break;
+                }
+                case kick:
+                {
+                    if(!cur_client->is_admin) break;
+                    char name[NICKNAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
+                    /* pseudo:
+                        verificar se cliente é admin (se for, o kick não será aplicado)
+                        
+                    
+                    */
+                    break;
+
+                }
+                case mute:
+                {
+                    if(!cur_client->is_admin) break;
+                    char name[NICKNAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
+                    break;
+                }
+                case unmute:
+                {
+                    if(!cur_client->is_admin) break;
+                    char name[NICKNAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
+                    break;
+                }
+                case whois:
+                {
+                    if(!cur_client->is_admin) break;
+                    char name[NICKNAME_MAX_SIZE];
+                    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
+                    break;
+                }
+                default:
+                    printf("Command not supported");
+            } 
         }
     }
-    
-
-    // recv_messages(&server);d
-    
-    // // verificação se conexão entre servidor e cliente foi aceita pelo cliente
-    // int len_client_address = sizeof(client_address);
-    // int connection_descriptor;
-    // if ((connection_descriptor = accept(server_socket_descriptor, (struct sockaddr *) & client_address, (socklen_t*) &len_client_address)) < 0) {
-    //     printf("Server acception failed!\n");
-    //     exit(EXIT_FAILURE);
-    // }
-    // else {
-    //     printf("Server successfully accepted client\n");
-    // }
-    
-    // SOCKET_DATA socket_data = {
-    //     .socket_descriptor = connection_descriptor,
-    //     .server_address = server_address,
-    //     .addr_len = sizeof(server_address),
-    // };
-
-    // // chat entre servidor e cliente
-    // printf("[ Starting communication ]\n\n");
-    
-    // // Usamos threads para poder realizar simultaneamente a escuta e o envio de mensagens entre o servidor e o cliente
-    // pthread_t thread;
-    
-    // pthread_create(&thread, NULL, &send_message, (void *) &socket_data); //thread com função de envio de mensagens
-
-    // recv_message(&socket_data); // função para receber as mensagens
-    
-    // //encerrando thread e socket para finalizar chat
-    // pthread_cancel(thread);
-    
-    // close(server_socket_descriptor);
-    switch (type){
-        case connect:
-            // server não pode conectar
-            break;
-        case quit:
-            for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; i++) {
-                if (cur_client->user_channel->clients[i] == cur_client ) {
-                    cur_client->user_channel->clients[i] = NULL;
-                    cur_client->user_channel->num_clients--;
-                }
-            }
-            if(cur_client->is_admin){
-                for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; i++) {
-                    if (cur_client->user_channel->clients[i] != NULL) {
-                        cur_client->user_channel->clients[i]->isAdmin = TRUE;
-                    }
-                }
-            }
-            close(cur_client->sock)
-            //todo: desalocar da estrutura
-            break;
-        case ping:
-            printf("Client: %d, Nickname: %d >> ping!\n",index,cur_client.nickname);
-            send(client->sock, "server >> pong", 14, 0)
-            break;
-        case join:
-            // TODO: responder a função de join do cliente
-            break;
-        case nickname:
-            // server não pode ter nickname
-            break;
-        case kick:
-            /* pseudo:
-                verificar se cliente é admin (se for, o kick não será aplicado)
-                
-            
-            */
-            break;
-        case mute:
-            break;
-        case unmute:
-            break;
-        case whois:
-            break;
-        default:
-            printf("Command not supported");
-    }   
 
     return 0;
 }
