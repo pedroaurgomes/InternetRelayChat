@@ -1,4 +1,4 @@
-make --dry-run --keep-going --print-directory
+make --dry-run --always-make --keep-going --print-directory
 make: Entering directory '/home/roassaf/semestres/5/redes/InternetRelayChat'
 gcc       -o client ./client.c  -Wall -Werror -pthread
 gcc       -o server ./server.c  -Wall -Werror -pthread

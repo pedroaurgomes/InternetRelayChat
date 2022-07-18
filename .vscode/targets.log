@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Jul 16 16:33:09 2022
+# Make data base, printed on Sun Jul 17 23:39:02 2022
 
 # Variables
 
@@ -59,7 +59,7 @@ NVM_BIN = /home/roassaf/.nvm/versions/node/v18.2.0/bin
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-VSCODE_IPC_HOOK_CLI = /mnt/wslg/runtime-dir/vscode-ipc-aac6b097-cc22-41e6-bdaf-f64abda55a9a.sock
+VSCODE_IPC_HOOK_CLI = /mnt/wslg/runtime-dir/vscode-ipc-95a9d562-1003-4325-a3cf-c00438c4b3b6.sock
 # default
 .FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
 # environment
@@ -77,7 +77,7 @@ WSL_INTEROP = /run/WSL/9_interop
 # environment
 PULSE_SERVER = /mnt/wslg/PulseServer
 # environment
-WT_SESSION = 8741ab48-03f4-4c4d-8b09-17726caf16a1
+WT_SESSION = ed2e98e8-641b-45c2-a328-0c83c50a1e11
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
@@ -183,9 +183,9 @@ WSL_DISTRO_NAME = Ubuntu
 
 # Directories
 
-# . (device 2080, inode 6924): 12 files, no impossibilities.
+# . (device 2080, inode 6924): 14 files, no impossibilities.
 
-# 12 files, no impossibilities in 1 directories.
+# 14 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -271,7 +271,7 @@ server:
 # Not a target:
 client.c:
 #  Implicit rule search has been done.
-#  Last modified 2022-07-16 16:25:29.914975936
+#  Last modified 2022-07-17 22:41:11.763039634
 #  File has been updated.
 #  Successfully updated.
 
@@ -285,7 +285,7 @@ client.c:
 # Not a target:
 server.c:
 #  Implicit rule search has been done.
-#  Last modified 2022-07-16 16:32:18.194979622
+#  Last modified 2022-07-17 23:39:01.902955099
 #  File has been updated.
 #  Successfully updated.
 
@@ -308,9 +308,9 @@ clean: server client
 # strcache buffers: 1 (0) / strings = 23 / storage = 189 B / avg = 8 B
 # current buf: size = 8162 B / used = 189 B / count = 23 / avg = 8 B
 
-# strcache performance: lookups = 36 / hit rate = 36%
+# strcache performance: lookups = 38 / hit rate = 39%
 # hash-table stats:
-# Load=23/8192=0%, Rehash=0, Collisions=1/36=3%
-# Finished Make data base on Sat Jul 16 16:33:09 2022
+# Load=23/8192=0%, Rehash=0, Collisions=1/38=3%
+# Finished Make data base on Sun Jul 17 23:39:02 2022
 
  
