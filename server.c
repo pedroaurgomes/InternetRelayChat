@@ -1,8 +1,9 @@
 #include "utils.h"
 
-//envio de informação com handshake, e 5 tentativas
+// envio de informação com handshake, e 5 tentativas
 bool send_to_client(int socket_descriptor, char *message, int str_length)
 {
+    int sleep_time = 1;
     for (int i = 0; i < MAX_ATTEMPTS; ++i)
     {
         send(socket_descriptor, message, str_length, 0);
@@ -13,6 +14,8 @@ bool send_to_client(int socket_descriptor, char *message, int str_length)
         {
             return true;
         }
+        printf("Hanshake err: sending tentativa '%d'\n", i);
+        sleep(sleep_time);
     }
 
     printf("Failure on sending a message to client. Disconnecting client from server...");
@@ -79,8 +82,10 @@ bool insert_client_channel(SERVER_SIDE *server, CHANNEL *channel, CLIENT *client
     {
         // tira cliente do canal antigo
         printf("User already on channel %s\n", client->user_channel->channel_name);
-        for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; ++i) {
-            if (client->user_channel->clients[i] == client) {
+        for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; ++i)
+        {
+            if (client->user_channel->clients[i] == client)
+            {
                 client->user_channel->clients[i] = NULL;
                 client->user_channel->num_clients--;
             }
@@ -96,8 +101,10 @@ bool insert_client_channel(SERVER_SIDE *server, CHANNEL *channel, CLIENT *client
         // Cliente é administrador - passar adm para outro cliente
         else if (client->is_admin)
         {
-            for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; ++i) {
-                if (client->user_channel->clients[i] != NULL && client != client->user_channel->clients[i]) {
+            for (int i = 0; i < MAX_CLIENTS_PER_CHANNEL; ++i)
+            {
+                if (client->user_channel->clients[i] != NULL && client != client->user_channel->clients[i])
+                {
                     client->user_channel->clients[i]->is_admin = true;
                     break;
                 }
@@ -116,10 +123,10 @@ bool insert_client_channel(SERVER_SIDE *server, CHANNEL *channel, CLIENT *client
     }
 
     channel->num_clients++;
-    
+
     client->is_muted = false;
     client->user_channel = channel;
-    
+
     return true;
 }
 
@@ -176,32 +183,35 @@ void *connect_server_client(void *args)
 // encerrando conexão de um cliente específico
 bool quit_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //remoção do cliente no canal atual
-    for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
+    if (cur_client->user_channel != NULL)
     {
-        if (cur_client->user_channel != NULL && cur_client->user_channel->clients[j] == cur_client)
+        // remoção do cliente no canal atual
+        for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
         {
-            cur_client->user_channel->clients[j] = NULL;
-            cur_client->user_channel->num_clients--;
-        }
-    }
-
-    // se canal esvaziar apaga eles
-    if (cur_client->user_channel->num_clients == 0)
-    {
-        delete_channel(server, cur_client->user_channel);
-        cur_client->user_channel = NULL;
-    }
-    else
-    {
-        // Definindo um novo admin para o canal se preciso
-        if (cur_client->is_admin)
-        {
-            for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
+            if (cur_client->user_channel != NULL && cur_client->user_channel->clients[j] == cur_client)
             {
-                if (cur_client->user_channel->clients[j] != NULL)
+                cur_client->user_channel->clients[j] = NULL;
+                cur_client->user_channel->num_clients--;
+            }
+        }
+
+        // se canal esvaziar apaga eles
+        if (cur_client->user_channel->num_clients == 0)
+        {
+            delete_channel(server, cur_client->user_channel);
+            cur_client->user_channel = NULL;
+        }
+        else
+        {
+            // Definindo um novo admin para o canal se preciso
+            if (cur_client->is_admin)
+            {
+                for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
                 {
-                    cur_client->user_channel->clients[j]->is_admin = true;
+                    if (cur_client->user_channel->clients[j] != NULL)
+                    {
+                        cur_client->user_channel->clients[j]->is_admin = true;
+                    }
                 }
             }
         }
@@ -217,6 +227,8 @@ bool quit_cmd(SERVER_SIDE *server, CLIENT *cur_client)
         }
     }
 
+    send_to_client(cur_client->socket_descriptor, "You are being disconnected from the server", 43);
+
     close(cur_client->socket_descriptor);
     printf("Client %s disconected\n", cur_client->nickname);
     free(cur_client);
@@ -226,9 +238,9 @@ bool quit_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 // envio de mensagem de um cliente
 bool message_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //pegando mensagem
-    char message[MAX_BUFFER];
-    recv(cur_client->socket_descriptor, message, MAX_BUFFER, MSG_DONTWAIT);
+    // pegando mensagem
+    char message[MAX_BUFFER] = {0};
+    recv(cur_client->socket_descriptor, message, MAX_BUFFER, 0);
 
     // checando se é possível enviar mensagem
     if (!cur_client->user_channel)
@@ -241,7 +253,7 @@ bool message_cmd(SERVER_SIDE *server, CLIENT *cur_client)
         return send_to_client(cur_client->socket_descriptor, "Error: user is muted", 21);
     }
 
-    //envio das mensagens
+    // envio das mensagens
     printf("Forwarding message: '%s' from '%s' to channel '%s'\n", message, cur_client->nickname, cur_client->user_channel->channel_name);
 
     for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; ++j)
@@ -275,12 +287,12 @@ bool ping_cmd(CLIENT *cur_client)
     return send_to_client(cur_client->socket_descriptor, "[ * server * ] pong", 20);
 }
 
-//inserção em novo canal dado um cliente
+// inserção em novo canal dado um cliente
 bool join_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //entrada do nick do canal
-    char channel_name[CHANNEL_NAME_MAX_SIZE];
-    recv(cur_client->socket_descriptor, channel_name, CHANNEL_NAME_MAX_SIZE, MSG_DONTWAIT);
+    // entrada do nick do canal
+    char channel_name[CHANNEL_NAME_MAX_SIZE] = {0};
+    recv(cur_client->socket_descriptor, channel_name, CHANNEL_NAME_MAX_SIZE, 0);
 
     printf("Printing Channel name (not verified): %s\n", channel_name);
 
@@ -291,11 +303,11 @@ bool join_cmd(SERVER_SIDE *server, CLIENT *cur_client)
     }
 
     CHANNEL *cur_channel = search_channel_by_name(channel_name, server);
-    if (!cur_channel) //criação de canal se não existir
+    if (!cur_channel) // criação de canal se não existir
     {
         cur_channel = calloc(1, sizeof(CHANNEL));
         strcpy(cur_channel->channel_name, channel_name);
-        if (!insert_channel_server(cur_channel, server)) //tratamento de erro
+        if (!insert_channel_server(cur_channel, server)) // tratamento de erro
         {
             free(cur_channel);
             return send_to_client(cur_client->socket_descriptor, "Error: max number of channels was reached.", 43);
@@ -307,10 +319,10 @@ bool join_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 
     else
     {
-        cur_client->is_admin = false; //se entrar em um canal que já existir, não será admin
+        cur_client->is_admin = false; // se entrar em um canal que já existir, não será admin
     }
 
-    if (!insert_client_channel(server, cur_channel, cur_client)) //tratamento de erro
+    if (!insert_client_channel(server, cur_channel, cur_client)) // tratamento de erro
     {
         printf("Failure in the creation of channel with name '%s' by '%s'\n", cur_channel->channel_name, cur_client->nickname);
         return send_to_client(cur_client->socket_descriptor, "Error: max number of clients was reached.", 42);
@@ -322,18 +334,18 @@ bool join_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 // mudança de apelido
 bool nickname_cmd(CLIENT *cur_client)
 {
-    recv(cur_client->socket_descriptor, cur_client->nickname, NICKNAME_MAX_SIZE, MSG_DONTWAIT);
+    recv(cur_client->socket_descriptor, cur_client->nickname, NICKNAME_MAX_SIZE, 0);
     return send_to_client(cur_client->socket_descriptor, "Successfuly changed nickname.", 31);
 }
 
 // expulsa usuário de um canal
 bool kick_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //recebe nick de quem for pra ser expulso
-    char name[NICKNAME_MAX_SIZE];
-    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, MSG_DONTWAIT);
+    // recebe nick de quem for pra ser expulso
+    char name[NICKNAME_MAX_SIZE] = {0};
+    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
 
-    if (!cur_client->is_admin) //checa permissões
+    if (!cur_client->is_admin) // checa permissões
     {
         return send_to_client(cur_client->socket_descriptor, "Permission denied - not channel admin.", 39);
     }
@@ -346,7 +358,7 @@ bool kick_cmd(SERVER_SIDE *server, CLIENT *cur_client)
             continue;
         if (strcmp(cur_client->user_channel->clients[j]->nickname, name) == 0)
         {
-            //expulsão do usuário e tratamento de erro
+            // expulsão do usuário e tratamento de erro
             if (!send_to_client(cur_client->user_channel->clients[j]->socket_descriptor, "You got kicked out from the channel.", 37))
             {
                 quit_cmd(server, cur_client->user_channel->clients[j]);
@@ -370,9 +382,9 @@ bool kick_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 // silenciando cliente em um canal
 bool mute_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //entrada do nickname
-    char name[NICKNAME_MAX_SIZE];
-    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, MSG_DONTWAIT);
+    // entrada do nickname
+    char name[NICKNAME_MAX_SIZE] = {0};
+    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
 
     // checa de permissões
     if (!cur_client->is_admin)
@@ -381,29 +393,35 @@ bool mute_cmd(SERVER_SIDE *server, CLIENT *cur_client)
     }
 
     // procura clientes com nick
+    bool found_user = false;
     for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
     {
         if (cur_client->user_channel->clients[j] == NULL || cur_client == cur_client->user_channel->clients[j])
             continue;
         if (strcmp(cur_client->user_channel->clients[j]->nickname, name) == 0)
         {
-            cur_client->user_channel->clients[j]->is_muted = true; //muda permissão de fala
+            cur_client->user_channel->clients[j]->is_muted = true; // muda permissão de fala
+            found_user = true;
 
-            //tratamento de erro
+            // tratamento de erro
             if (!send_to_client(cur_client->user_channel->clients[j]->socket_descriptor, "You are now muted on the channel.", 34))
             {
                 quit_cmd(server, cur_client->user_channel->clients[j]);
+
             }
         }
     }
-    return send_to_client(cur_client->socket_descriptor, "User(s) succesfuly muted.", 26);
+    // retorno da função
+    if (found_user)
+        return send_to_client(cur_client->socket_descriptor, "User(s) succesfuly muted.", 26);
+    return send_to_client(cur_client->socket_descriptor, "User(s) not found.", 19);
 }
 
 bool unmute_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //entrada do nickname
-    char name[NICKNAME_MAX_SIZE];
-    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, MSG_DONTWAIT);
+    // entrada do nickname
+    char name[NICKNAME_MAX_SIZE] = {0};
+    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
 
     // checa de permissões
     if (!cur_client->is_admin)
@@ -412,15 +430,16 @@ bool unmute_cmd(SERVER_SIDE *server, CLIENT *cur_client)
     }
 
     // procura clientes com nick
+    bool found_user = false;
     for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
     {
         if (cur_client->user_channel->clients[j] == NULL || cur_client == cur_client->user_channel->clients[j])
             continue;
         if (strcmp(cur_client->user_channel->clients[j]->nickname, name) == 0)
         {
-            cur_client->user_channel->clients[j]->is_muted = false;//muda permissão de fala
-
-            //tratamento de erro
+            cur_client->user_channel->clients[j]->is_muted = false; // muda permissão de fala
+            found_user = true;
+            // tratamento de erro
             if (!send_to_client(cur_client->user_channel->clients[j]->socket_descriptor, "You are now unmuted on the channel.", 36))
             {
                 quit_cmd(server, cur_client->user_channel->clients[j]);
@@ -428,14 +447,17 @@ bool unmute_cmd(SERVER_SIDE *server, CLIENT *cur_client)
         }
     }
 
-    return send_to_client(cur_client->socket_descriptor, "User succesfuly unmuted.", 25);
+    // retorno da função
+    if (found_user)
+        return send_to_client(cur_client->socket_descriptor, "User succesfuly unmuted.", 25);
+    return send_to_client(cur_client->socket_descriptor, "User(s) not found.", 19);
 }
 
 bool whois_cmd(SERVER_SIDE *server, CLIENT *cur_client)
 {
-    //entrada do nickname
-    char name[NICKNAME_MAX_SIZE];
-    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, MSG_DONTWAIT);
+    // entrada do nickname
+    char name[NICKNAME_MAX_SIZE] = {0};
+    recv(cur_client->socket_descriptor, name, NICKNAME_MAX_SIZE, 0);
 
     // checa de permissões
     if (!cur_client->is_admin)
@@ -444,17 +466,19 @@ bool whois_cmd(SERVER_SIDE *server, CLIENT *cur_client)
     }
 
     // procura clientes com nick
+    bool found_user = false;
     for (int j = 0; j < MAX_CLIENTS_PER_CHANNEL; j++)
     {
         if (cur_client->user_channel->clients[j] == NULL || cur_client == cur_client->user_channel->clients[j])
             continue;
         if (strcmp(cur_client->user_channel->clients[j]->nickname, name) == 0)
         {
-            //recuperando ip
+            // recuperando ip
             char client_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &cur_client->addr, client_ip, INET_ADDRSTRLEN);
+            found_user = true;
 
-            //tratamento de erro
+            // tratamento de erro
             if (!send_to_client(cur_client->socket_descriptor, client_ip, INET_ADDRSTRLEN))
             {
                 quit_cmd(server, cur_client);
@@ -463,7 +487,9 @@ bool whois_cmd(SERVER_SIDE *server, CLIENT *cur_client)
         }
     }
 
-    return true;
+    if (found_user)
+        return send_to_client(cur_client->socket_descriptor, "User ip found", 14);
+    return send_to_client(cur_client->socket_descriptor, "User(s) not found.", 19);
 }
 
 int main(int argc, char *argv[])
@@ -523,27 +549,30 @@ int main(int argc, char *argv[])
         printf("Socket successfully listening on port %d\n", PORT);
     }
 
-    //thread de aceitar novos clientes
+    // thread de aceitar novos clientes
     pthread_t connection_thread;
     pthread_create(&connection_thread, NULL, connect_server_client, (void *)&server);
 
     bool end_server = false;
     while (!end_server)
     {
-        //passa por todos os clientes e realiza a operação necessária se for requisitafa
+        // passa por todos os clientes e realiza a operação necessária se for requisitafa
         for (int i = 0; i < MAX_CLIENTS_ON; ++i)
         {
             if (server.clients[i] == NULL)
                 continue;
+
             int opcode = -1;
 
             CLIENT *cur_client = server.clients[i];
             if (recv(cur_client->socket_descriptor, &opcode, sizeof(int), MSG_DONTWAIT) == -1)
                 continue;
+
             if (opcode == -1)
                 continue;
 
-            printf("Request from %s with opcode %d\n", cur_client->nickname, opcode);
+            printf("Request from '%s' with opcode '%d'\n", cur_client->nickname, opcode);
+
             bool mantain_user_connection = true;
             if (opcode == msg)
             {
@@ -582,6 +611,7 @@ int main(int argc, char *argv[])
                 printf("Command not supported");
                 mantain_user_connection = send_to_client(cur_client->socket_descriptor, "Error - Command not Supported", 30);
             }
+
             // respostas das operações para se preciso desconectar cliente
             if (opcode == quit || mantain_user_connection == false)
             {

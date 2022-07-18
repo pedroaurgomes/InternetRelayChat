@@ -1,5 +1,5 @@
-#ifndef __CLIENT_H__
-#define __CLIENT_H__
+#ifndef __UTILS_H__
+#define __UTILS_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,20 +22,25 @@
 #define PORT 8080
 
 #define MAX_BUFFER 4096
-#define NICKNAME_MAX_SIZE       50
-#define MAX_CLIENTS_ON          10
-#define MAX_CHANNELS            10
-#define NICKNAME_MAX_SIZE       50
-#define CHANNEL_NAME_MAX_SIZE   200
+#define NICKNAME_MAX_SIZE 50
+#define MAX_CLIENTS_ON 10
+#define MAX_CHANNELS 10
+#define NICKNAME_MAX_SIZE 50
+#define CHANNEL_NAME_MAX_SIZE 200
 #define MAX_CLIENTS_PER_CHANNEL 10
 #define MAX_ATTEMPTS 5
 
-typedef enum { false, true } bool;
+typedef enum
+{
+    false,
+    true
+} bool;
 
 // structs para passar mais facilmente parâmetros da socket
 typedef struct sockaddr_in socket_address;
 
-typedef struct __client_data {
+typedef struct __socket_data
+{
     char client_nickname[NICKNAME_MAX_SIZE];
     int socket_descriptor;
     struct sockaddr_in server_address;
@@ -43,9 +48,10 @@ typedef struct __client_data {
     bool is_connected;
 } SOCKET_DATA;
 
-typedef enum _irc_options {
+typedef enum _irc_options
+{
     msg = 0,
-    
+
     // Comando da Segunda entrega
     con, // connect
     quit,
@@ -62,11 +68,9 @@ typedef enum _irc_options {
     invalid_command
 } IRC_OPTIONS;
 
-
 typedef struct _server_side_channel_struct CHANNEL;
 typedef struct _server_side_client_struct CLIENT;
 typedef struct _server_side_struct SERVER_SIDE;
-typedef struct _server_msg_pattern_struct SERVER_FRAME;
 
 // Struct que representa os canais dentro do servidor
 struct _server_side_channel_struct
@@ -93,8 +97,8 @@ struct _server_side_client_struct
 // Struct que compreende todas as informações do servidor
 struct _server_side_struct
 {
-    CLIENT *clients[MAX_CLIENTS_ON]; 
-    CHANNEL *channels[MAX_CHANNELS]; 
+    CLIENT *clients[MAX_CLIENTS_ON];
+    CHANNEL *channels[MAX_CHANNELS];
 
     int socket_descriptor;   // descritor do socket da conexão
     struct sockaddr_in addr; // endereço da conexão
@@ -103,6 +107,5 @@ struct _server_side_struct
     int num_channels; // Total de canais
     int num_clients;  // Total de clientes
 };
-
 
 #endif

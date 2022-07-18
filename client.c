@@ -51,7 +51,7 @@ int parse_for_cmd(char *message)
         return quit;
 
     if (message[0] != '/') // sem comandos, mensagem simples
-        return msg;       
+        return msg;
 
     else
     { // possíveis comandos na message
@@ -93,7 +93,7 @@ int parse_for_cmd(char *message)
             return whois;
         }
         else
-        {                           
+        {
             return invalid_command; // Comando não identificado
         }
     }
@@ -115,7 +115,7 @@ void set_client_nickname(char *client_nickname, char *client_message)
     printf("New user nickname: %s\n", client_nickname);
 }
 
-//função para conectar socket, baseada na primeira parte do trabalho
+// função para conectar socket, baseada na primeira parte do trabalho
 bool connect_to_server(SOCKET_DATA *client_socket)
 {
     client_socket->socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
@@ -162,9 +162,10 @@ int main(int argc, char *argv[])
 {
 
     // Ignora ctrl + C
-    struct sigaction sa = { .sa_handler = SIG_IGN };
+    struct sigaction sa = {.sa_handler = SIG_IGN};
     sigemptyset(&sa.sa_mask);
-    if (sigaction(SIGINT, &sa, NULL) == -1);
+    if (sigaction(SIGINT, &sa, NULL) == -1)
+        ;
 
     SOCKET_DATA client_socket;
     stpcpy(client_socket.client_nickname, "user");
@@ -212,7 +213,7 @@ int main(int argc, char *argv[])
 
             break;
 
-        case con: //conexão da socket e uso de thread para enviar e receber mensagem simultaneamente
+        case con: // conexão da socket e uso de thread para enviar e receber mensagem simultaneamente
             if (!connect_to_server(&client_socket))
             {
                 end_connection = true;
@@ -234,10 +235,10 @@ int main(int argc, char *argv[])
 
             send(client_socket.socket_descriptor, &opcode, sizeof(int), 0);
 
-            // encerrando aplicação
-            printf("Application closed.\n");
-            exit(0);
+            sleep(5); // Esperar a resposta do servidor 
 
+            // encerrando aplicação
+            end_connection = true;
             break;
 
         case ping:
@@ -246,7 +247,7 @@ int main(int argc, char *argv[])
                 printf("Client not connect to a server. Please type /connect\n");
                 continue;
             }
-            //envio do ping
+            // envio do ping
             send(client_socket.socket_descriptor, &opcode, sizeof(int), 0);
 
             break;
@@ -259,7 +260,7 @@ int main(int argc, char *argv[])
             }
             params = strchr(message, ' ') + 1;
 
-            //envio da operação e o parametro
+            // envio da operação e o parametro
             send_full_message(&client_socket, opcode, params, CHANNEL_NAME_MAX_SIZE);
 
             // Verificar se um canal existe => está sendo feito do lado do servidor
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
 
             if (client_socket.is_connected)
             {
-                //envio da operação e o parametro
+                // envio da operação e o parametro
                 send_full_message(&client_socket, opcode, params, NICKNAME_MAX_SIZE);
             }
 
@@ -282,7 +283,7 @@ int main(int argc, char *argv[])
         case kick: // exclusiva de admin
             params = strchr(message, ' ') + 1;
 
-            //envio da operação e o parametro
+            // envio da operação e o parametro
             send_full_message(&client_socket, opcode, params, NICKNAME_MAX_SIZE);
 
             break;
@@ -290,7 +291,7 @@ int main(int argc, char *argv[])
         case mute: // exclusiva de admin
             params = strchr(message, ' ') + 1;
 
-            //envio da operação e o parametro
+            // envio da operação e o parametro
             send_full_message(&client_socket, opcode, params, NICKNAME_MAX_SIZE);
 
             break;
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
         case unmute: // exclusiva de admin
             params = strchr(message, ' ') + 1;
 
-            //envio da operação e o parametro
+            // envio da operação e o parametro
             send_full_message(&client_socket, opcode, params, NICKNAME_MAX_SIZE);
 
             break;
@@ -306,7 +307,7 @@ int main(int argc, char *argv[])
         case whois: // exclusiva de admin
             params = strchr(message, ' ') + 1;
 
-            //envio da operação e o parametro
+            // envio da operação e o parametro
             send_full_message(&client_socket, opcode, params, NICKNAME_MAX_SIZE);
 
             break;
